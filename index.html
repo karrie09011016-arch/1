@@ -39,13 +39,47 @@
       </div>
     </div>
 
-    <footer>
-      <small>点击图片上的不同处来找到它们</small>
-    </footer>
+    <div id="coordinateTool" style="position:fixed;right:12px;bottom:12px;z-index:99999;background:#fff;padding:10px;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.12);font-size:13px">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+        <button id="toggleRecordBtn" style="padding:6px 8px;border-radius:6px;background:#ff6b6b;color:#fff;border:none">开始记录</button>
+        <button id="clearRecordBtn" style="padding:6px 8px;border-radius:6px;background:#eee;border:none">清除</button>
+      </div>
+      <div id="recordList" style="max-height:160px;overflow:auto;width:260px;padding:6px;border:1px dashed #eee;background:#fafafa"></div>
+      <div style="margin-top:8px;font-size:12px;color:#666">提示：点击右侧图片可记录坐标（百分比）。</div>
+    </div>
+
   </div>
 
   <script src="script.js"></script>
   <script>
+    // 记录工具：右侧图片点击时追加坐标到记录框
+    (function(){
+      const overlay = document.getElementById('overlay');
+      const toggleBtn = document.getElementById('toggleRecordBtn');
+      const clearBtn = document.getElementById('clearRecordBtn');
+      const list = document.getElementById('recordList');
+      let recording = false;
+      toggleBtn.addEventListener('click', ()=>{
+        recording = !recording;
+        toggleBtn.textContent = recording ? '停止记录' : '开始记录';
+        toggleBtn.style.background = recording ? '#bbb' : '#ff6b6b';
+      });
+      clearBtn.addEventListener('click', ()=>{ list.innerHTML=''; });
+      overlay.addEventListener('click', function(e){
+        if(!recording) return;
+        const rect = overlay.getBoundingClientRect();
+        const clientX = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
+        const clientY = (e.touches && e.touches[0]) ? e.touches[0].clientY : e.clientY;
+        const px = Math.round(((clientX - rect.left) / rect.width) * 100);
+        const py = Math.round(((clientY - rect.top) / rect.height) * 100);
+        const div = document.createElement('div');
+        div.textContent = `click at ${px} ${py}`;
+        div.style.padding='4px 6px';
+        list.appendChild(div);
+        list.scrollTop = list.scrollHeight;
+      }, {passive:true});
+    })();
+
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(()=>{});
     }
