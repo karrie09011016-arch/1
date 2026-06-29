@@ -1,6 +1,6 @@
 // 三关数据：使用你仓库中的图片（A1/A2 为第一关，B1/B2 第二关，C1/C2 第三关）
 // hotspots 用百分比 (x,y) 和 半径 r (百分比)
-// 这个是稳定回滚版本（使用最早的 hotspots/逻辑）
+// 修复说明：确保 "found" 与 "current" 在 window 上可访问，并导出 checkHit，保证在不同上下文（htmlpreview/raw）下也能工作。
 const levels = [
   {
     left: 'A1.jpg',
@@ -31,8 +31,11 @@ const levels = [
   }
 ];
 
-let current = 0;
-let found = []; // boolean per hotspot
+// 保证全局可访问
+window.levels = levels;
+window.current = window.current || 0;
+// 确保 found 在 window 上（页面其他脚本或临时补丁可能读取 window.found��
+window.found = window.found || [];
 
 const imgLeft = document.getElementById('imgLeft');
 const imgRight = document.getElementById('imgRight');
@@ -48,17 +51,28 @@ const nextBtn = document.getElementById('nextBtn');
 const debugMode = new URLSearchParams(location.search).get('debug') === '1';
 
 function loadLevel(idx){
+  if(!levels[idx]){
+    console.error('levels not available or index out of range', idx);
+    return;
+  }
+  // 保持 window.current 与内部索引一致
+  window.current = idx;
+
   const lvl = levels[idx];
-  imgLeft.src = lvl.left;
-  imgRight.src = lvl.right;
-  found = new Array(lvl.hotspots.length).fill(false);
+  if(imgLeft) imgLeft.src = lvl.left;
+  if(imgRight) imgRight.src = lvl.right;
+
+  // 使用 window.found 作为全局状态
+  window.found = new Array(lvl.hotspots.length).fill(false);
+
   clearMarkers();
   clearDebugHotspots();
   updateInfo();
-  levelLabel.textContent = `第 ${idx+1} 关 / 共 ${levels.length} 关`;
-  totalCountEl.textContent = lvl.hotspots.length;
+  if(levelLabel) levelLabel.textContent = `第 ${idx+1} 关 / 共 ${levels.length} 关`;
+  if(totalCountEl) totalCountEl.textContent = lvl.hotspots.length;
   hideModal();
   if(debugMode) renderDebugHotspots(lvl.hotspots);
+  console.log('loaded level', idx, 'hotspots', lvl.hotspots);
 }
 
 // 把已找到的 marker DOM 清掉
@@ -74,6 +88,7 @@ function clearDebugHotspots(){
 
 // 计算点击相对百分比并判断是否命中
 function onClickEvent(e){
+  if(!overlay) return;
   // 支持 touch 和 mouse
   const rect = overlay.getBoundingClientRect();
   const clientX = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
@@ -99,23 +114,30 @@ function onClickEvent(e){
 
 // 检查是否命中未找到的热点
 function checkHit(px, py){
-  const lvl = levels[current];
+  const lvl = levels[window.current];
+  if(!lvl){ console.error('no level data for index', window.current); return; }
+
+  // 确保 window.found 有效且长度与 hotspots 对应
+  if(!Array.isArray(window.found) || window.found.length < lvl.hotspots.length){
+    window.found = new Array(lvl.hotspots.length).fill(false);
+  }
+
   for(let i=0;i<lvl.hotspots.length;i++){
-    if(found[i]) continue;
+    if(window.found[i]) continue;
     const h = lvl.hotspots[i];
-    // 判断圆形：以图片宽度百分比为单位（用 x/y 都可，因为都是百分比）
+    // 判断圆形：以图片宽度百分比为单位（用 x/y 都可因为都是百分比）
     const dx = px - h.x;
     const dy = py - h.y;
     const dist = Math.sqrt(dx*dx + dy*dy);
     if(dist <= h.r){
       // 命中
-      found[i] = true;
+      window.found[i] = true;
       addMarker(h.x, h.y, h.r);
       updateInfo();
       // 简单提示（震动)
       if(navigator.vibrate) navigator.vibrate(50);
       // 若全部找到，显示过关
-      if(found.every(Boolean)){
+      if(window.found.every(Boolean)){
         setTimeout(()=> showLevelComplete(), 400);
       }
       return;
@@ -124,6 +146,7 @@ function checkHit(px, py){
 }
 
 function addMarker(xPercent,yPercent,rPercent){
+  if(!overlay) return;
   const marker = document.createElement('div');
   marker.className = 'marker';
   const size = (rPercent * 2); // 直径百分比
@@ -135,6 +158,7 @@ function addMarker(xPercent,yPercent,rPercent){
 }
 
 function renderDebugHotspots(hotspots){
+  if(!overlay) return;
   hotspots.forEach(h=>{
     const d = document.createElement('div');
     d.className = 'hotspot-debug';
@@ -154,38 +178,41 @@ function renderDebugHotspots(hotspots){
 }
 
 function updateInfo(){
-  const foundCount = found.filter(Boolean).length;
-  foundCountEl.textContent = foundCount;
-  totalCountEl.textContent = levels[current].hotspots.length;
+  const foundCount = (Array.isArray(window.found) ? window.found.filter(Boolean).length : 0);
+  if(foundCountEl) foundCountEl.textContent = foundCount;
+  if(totalCountEl && levels[window.current]) totalCountEl.textContent = levels[window.current].hotspots.length;
 }
 
 function showLevelComplete(){
-  modalText.textContent = current < levels.length - 1 ? '恭喜过关��准备进入下一关' : '全部完成，恭喜！';
-  nextBtn.textContent = current < levels.length - 1 ? '下一关' : '完成';
+  if(modalText) modalText.textContent = window.current < levels.length - 1 ? '恭喜过关，准备进入下一关' : '全部完成，恭喜！';
+  if(nextBtn) nextBtn.textContent = window.current < levels.length - 1 ? '下一关' : '完成';
   showModal();
 }
 
 // 下一关按钮处理
-
-nextBtn.addEventListener('click', ()=>{
-  hideModal();
-  if(current < levels.length - 1){
-    current++;
-    loadLevel(current);
-  } else {
-    current = 0;
-    loadLevel(current);
-  }
-});
+if(nextBtn){
+  nextBtn.addEventListener('click', ()=>{
+    hideModal();
+    if(window.current < levels.length - 1){
+      window.current++;
+      loadLevel(window.current);
+    } else {
+      window.current = 0;
+      loadLevel(window.current);
+    }
+  });
+}
 
 // 事件监听（支持 touchstart 以便移动端无延迟）
-overlay.addEventListener('click', onClickEvent);
-overlay.addEventListener('touchstart', function(e){ e.preventDefault(); onClickEvent(e); }, {passive:false});
+if(overlay){
+  overlay.addEventListener('click', onClickEvent);
+  overlay.addEventListener('touchstart', function(e){ e.preventDefault(); onClickEvent(e); }, {passive:false});
+}
 
 // 暴露到 window 以便 index.html 的控件使用
 window.levels = levels;
-window.current = current;
 window.loadLevel = loadLevel;
+window.checkHit = checkHit;
 
 // 初始加载
-loadLevel(current);
+loadLevel(window.current);
