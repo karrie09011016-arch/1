@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>找不同小游戏</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ff6b6b">
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>找不同</h1>
+      <div id="levelLabel">第 1 关 / 共 3 关</div>
+    </header>
+
+    <main>
+      <div class="images-row">
+        <div class="image-box">
+          <img id="imgLeft" src="" alt="Left" />
+        </div>
+        <div class="image-box relative">
+          <img id="imgRight" src="" alt="Right" />
+          <!-- 透明覆盖层用于接收点击（适配触摸) -->
+          <div id="overlay" class="overlay"></div>
+        </div>
+      </div>
+
+      <div class="info">
+        已找到 <span id="foundCount">0</span>/<span id="totalCount">3</span>
+      </div>
+    </main>
+
+    <div id="modal" class="modal hidden">
+      <div class="modal-content" id="modalContent">
+        <p id="modalText">恭喜过关！</p>
+        <button id="nextBtn">下一关</button>
+      </div>
+    </div>
+
+    <div id="coordinateTool" style="position:fixed;right:12px;bottom:12px;z-index:99999;background:#fff;padding:10px;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.12);font-size:13px">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+        <button id="toggleRecordBtn" style="padding:6px 8px;border-radius:6px;background:#ff6b6b;color:#fff;border:none">开始记录</button>
+        <button id="prevLevelBtn" style="padding:6px 8px;border-radius:6px;background:#eee;border:none">上一关</button>
+        <button id="nextLevelBtn" style="padding:6px 8px;border-radius:6px;background:#eee;border:none">下一关</button>
+        <button id="clearRecordBtn" style="padding:6px 8px;border-radius:6px;background:#eee;border:none">清除</button>
+      </div>
+      <div id="recordList" style="max-height:160px;overflow:auto;width:320px;padding:6px;border:1px dashed #eee;background:#fafafa"></div>
+      <div style="margin-top:8px;font-size:12px;color:#666">提示：点击右侧图片可记录坐标（百分比）。</div>
+    </div>
+
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    // 记录工具：右侧图片点击时追加坐标到记录框
+    (function(){
+      const overlay = document.getElementById('overlay');
+      const toggleBtn = document.getElementById('toggleRecordBtn');
+      const clearBtn = document.getElementById('clearRecordBtn');
+      const prevBtn = document.getElementById('prevLevelBtn');
+      const nextBtn = document.getElementById('nextLevelBtn');
+      const list = document.getElementById('recordList');
+      let recording = false;
+      toggleBtn.addEventListener('click', ()=>{
+        recording = !recording;
+        toggleBtn.textContent = recording ? '停止记录' : '开始记录';
+        toggleBtn.style.background = recording ? '#bbb' : '#ff6b6b';
+      });
+      clearBtn.addEventListener('click', ()=>{ list.innerHTML=''; });
+
+      prevBtn.addEventListener('click', ()=>{
+        window.current = Math.max(0, window.current - 1);
+        if(typeof window.loadLevel === 'function') window.loadLevel(window.current);
+      });
+      nextBtn.addEventListener('click', ()=>{
+        window.current = Math.min(window.levels.length-1, window.current + 1);
+        if(typeof window.loadLevel === 'function') window.loadLevel(window.current);
+      });
+
+      overlay.addEventListener('click', function(e){
+        if(!recording) return;
+        const rect = overlay.getBoundingClientRect();
+        const clientX = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
+        const clientY = (e.touches && e.touches[0]) ? e.touches[0].clientY : e.clientY;
+        const px = Math.round(((clientX - rect.left) / rect.width) * 100);
+        const py = Math.round(((clientY - rect.top) / rect.height) * 100);
+        const div = document.createElement('div');
+        div.textContent = `click at ${px} ${py}`;
+        div.style.padding='4px 6px';
+        list.appendChild(div);
+        list.scrollTop = list.scrollHeight;
+      }, {passive:true});
+    })();
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(()=>{});
+    }
+  </script>
+</body>
+</html>
