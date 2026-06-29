@@ -25,9 +25,9 @@ const levels = [
     left: 'C1.jpg',
     right: 'C2.jpg',
     hotspots: [
-      { x: 34, y: 30, r: 9 },
-      { x: 55, y: 55, r: 9 },
-      { x: 78, y: 68, r: 9 },
+      { x: 21, y: 37, r: 9 },
+      { x: 50, y: 65, r: 9 },
+      { x: 73, y: 32, r: 9 },
     ]
   }
 ];
@@ -43,12 +43,16 @@ const totalCountEl = document.getElementById('totalCount');
 const levelLabel = document.getElementById('levelLabel');
 const modal = document.getElementById('modal');
 const modalText = document.getElementById('modalText');
-const nextBtn = document.getElementById('nextBtn');
+const modalNextBtn = document.getElementById('nextBtn');
 
 // debug 模式：在 URL 中加 ?debug=1 可显示热点区域辅助校准
 const debugMode = new URLSearchParams(location.search).get('debug') === '1';
 
 function loadLevel(idx){
+  // ensure internal current stays in sync with any external callers
+  current = idx;
+  window.current = current;
+
   const lvl = levels[idx];
   imgLeft.src = lvl.left;
   imgRight.src = lvl.right;
@@ -162,7 +166,7 @@ function updateInfo(){
 
 function showLevelComplete(){
   modalText.textContent = current < levels.length - 1 ? '恭喜过关！准备进入下一关' : '全部完成，恭喜！';
-  nextBtn.textContent = current < levels.length - 1 ? '下一关' : '完成';
+  modalNextBtn.textContent = current < levels.length - 1 ? '下一关' : '完成';
   showModal();
 }
 
@@ -170,7 +174,7 @@ function showModal(){ modal.classList.remove('hidden'); }
 function hideModal(){ modal.classList.add('hidden'); }
 
 // 下一关按钮处理
-nextBtn.addEventListener('click', ()=>{
+modalNextBtn.addEventListener('click', ()=>{
   hideModal();
   if(current < levels.length - 1){
     current++;
