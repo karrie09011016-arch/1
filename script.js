@@ -1,9 +1,10 @@
 // 三关数据：使用你仓库中的图片（A1/A2 为第一关，B1/B2 第二关，C1/C2 第三关）
 // hotspots 用百分比 (x,y) 和 半径 r (百分比)
 // 永久修复：
-// 1) checkHit 改为 nearest-first（若点击落在多个 hotspots 重叠区，优先匹配距离最近的）
-// 2) addMarker 创建的 marker 不拦截点击并短暂淡出后移除，避免挡住后续点击
-// 3) 第2关 hotspots 使用用户测试坐标，半径 r 设为 6 以提高识别鲁棒性
+// - 优先匹配最近的 hotspot（nearest-first）
+// - marker 为 absolute、中心对齐、pointer-events: none，并短暂淡出后移除
+// - overlay 强制置顶并开启 pointer-events，避免 marker 或其他元素遮挡
+// - 第2关坐标/半径按用户测试更新并微调为 r=6
 // debug 模式：在 URL 中加 ?debug=1 可显示热点区域辅助校准
 const levels = [
   {
@@ -52,10 +53,22 @@ const modalNextBtn = document.getElementById('nextBtn');
 // debug 模式：在 URL 中加 ?debug=1 可显示热点区域辅助校准
 const debugMode = new URLSearchParams(location.search).get('debug') === '1';
 
+function ensureOverlayTop(){
+  if(!overlay) return;
+  // 确保 overlay 可接收事件并在最上层
+  overlay.style.position = overlay.style.position || 'relative';
+  overlay.style.zIndex = '9999';
+  overlay.style.pointerEvents = 'auto';
+  // 改善移动端触控响应
+  overlay.style.touchAction = overlay.style.touchAction || 'manipulation';
+}
+
 function loadLevel(idx){
   // ensure internal current stays in sync with any external callers
   current = idx;
   window.current = current;
+
+  ensureOverlayTop();
 
   const lvl = levels[idx];
   imgLeft.src = lvl.left;
@@ -93,12 +106,19 @@ function onClickEvent(e){
   // debug log
   console.log('click at', Math.round(px), Math.round(py));
 
-  // debug visual dot so you可以 see click position on mobile
+  // debug visual dot so you��以 see click position on mobile
   try{
     const dot = document.createElement('div');
     dot.className = 'debug-dot';
+    dot.style.position = 'absolute';
     dot.style.left = px + '%';
     dot.style.top = py + '%';
+    dot.style.transform = 'translate(-50%,-50%)';
+    dot.style.width = '6px';
+    dot.style.height = '6px';
+    dot.style.background = 'rgba(0,0,0,0.5)';
+    dot.style.borderRadius = '50%';
+    dot.style.pointerEvents = 'none';
     overlay.appendChild(dot);
     setTimeout(()=>dot.remove(),900);
   }catch(e){console.warn(e)}
@@ -117,6 +137,7 @@ function checkHit(px, py){
     const dx = px - h.x;
     const dy = py - h.y;
     const dist = Math.sqrt(dx*dx + dy*dy);
+    console.log(`hotspot[${i}] dist=${dist.toFixed(2)} r=${h.r} found=${found[i]}`);
     if(dist <= h.r && dist < bestDist){
       bestDist = dist;
       bestIndex = i;
@@ -134,18 +155,25 @@ function checkHit(px, py){
   }
 }
 
-// 创建 non-blocking marker 并短暂淡出后移除
+// 创建 non-blocking、绝对定位且中心对齐的 marker，并短暂淡出后移除
 function addMarker(xPercent,yPercent,rPercent){
   const marker = document.createElement('div');
   marker.className = 'marker';
   const size = (rPercent * 2); // 直径百分比
+  marker.style.position = 'absolute';
   marker.style.width = size + '%';
   marker.style.height = size + '%';
   marker.style.left = xPercent + '%';
   marker.style.top = yPercent + '%';
+  marker.style.transform = 'translate(-50%,-50%)';
+  marker.style.background = 'rgba(255,0,0,0.18)';
+  marker.style.border = '2px solid rgba(255,0,0,0.7)';
+  marker.style.borderRadius = '50%';
   marker.style.pointerEvents = 'none';
   marker.style.transition = 'opacity 0.25s';
+  marker.style.opacity = '1';
   overlay.appendChild(marker);
+  // 让 marker 在视觉上保留一瞬间然后淡出并移除，避免遮挡后续点击
   setTimeout(()=> marker.style.opacity = '0', 700);
   setTimeout(()=> marker.remove(), 950);
 }
@@ -161,7 +189,7 @@ function renderDebugHotspots(hotspots){
     d.style.width = size + '%';
     d.style.height = size + '%';
     d.style.transform = 'translate(-50%,-50%)';
-    d.style.background = 'rgba(255,0,0,0.12)';
+    d.style.background = 'rgba(255,0,0,0.10)';
     d.style.border = '2px dashed rgba(255,0,0,0.6)';
     d.style.borderRadius = '50%';
     d.style.pointerEvents = 'none';
@@ -175,4 +203,35 @@ function updateInfo(){
   totalCountEl.textContent = levels[current].hotspots.length;
 }
 
-{
+function showLevelComplete(){
+  modalText.textContent = current < levels.length - 1 ? '恭喜过关！准备进入下一关' : '全部完成，恭喜！';
+  modalNextBtn.textContent = current < levels.length - 1 ? '下一关' : '完成';
+  showModal();
+}
+
+function showModal(){ modal.classList.remove('hidden'); }
+function hideModal(){ modal.classList.add('hidden'); }
+
+// 下一关按钮处理
+modalNextBtn.addEventListener('click', ()=>{
+  hideModal();
+  if(current < levels.length - 1){
+    current++;
+    loadLevel(current);
+  } else {
+    current = 0;
+    loadLevel(current);
+  }
+});
+
+// 事件监听（支持 touchstart 以便移动端无延迟）
+overlay.addEventListener('click', onClickEvent);
+overlay.addEventListener('touchstart', function(e){ e.preventDefault(); onClickEvent(e); }, {passive:false});
+
+// 暴露到 window 以便 index.html 的控件使用
+window.levels = levels;
+window.current = current;
+window.loadLevel = loadLevel;
+
+// 初始加载
+loadLevel(current);
