@@ -73,6 +73,16 @@ function onClickEvent(e){
   // debug log
   console.log('click at', Math.round(px), Math.round(py));
 
+  // debug visual dot so you can see click position on mobile
+  try{
+    const dot = document.createElement('div');
+    dot.className = 'debug-dot';
+    dot.style.left = px + '%';
+    dot.style.top = py + '%';
+    overlay.appendChild(dot);
+    setTimeout(()=>dot.remove(),900);
+  }catch(e){console.warn(e)}
+
   checkHit(px, py);
 }
 
