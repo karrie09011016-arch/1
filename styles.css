@@ -1,3 +1,4 @@
+/* existing styles with pointer-events fix and overlay z-index */
 :root{--accent:#ff6b6b;--bg:#fff;--muted:#666}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body,#root{height:100%}
@@ -8,9 +9,9 @@ h1{font-size:20px}
 #levelLabel{font-size:14px;color:var(--muted)}
 .images-row{display:flex;gap:8px;align-items:stretch}
 .image-box{flex:1;background:#eee;border-radius:8px;overflow:hidden;position:relative;min-height:220px}
-.image-box img{width:100%;height:100%;object-fit:cover;display:block;touch-action:none;-webkit-user-drag:none}
+.image-box img{width:100%;height:100%;object-fit:cover;display:block;touch-action:none;-webkit-user-drag:none;pointer-events:none}
 .relative{position:relative}
-.overlay{position:absolute;left:0;top:0;right:0;bottom:0}
+.overlay{position:absolute;left:0;top:0;right:0;bottom:0;z-index:5}
 .marker{position:absolute;border:3px solid var(--accent);border-radius:50%;box-shadow:0 0 8px rgba(0,0,0,.25);transform:translate(-50%,-50%);pointer-events:none;animation:pop .25s ease}
 @keyframes pop{from{transform:translate(-50%,-50%) scale(.3)}to{transform:translate(-50%,-50%) scale(1)}}
 .info{margin-top:8px;font-size:16px}

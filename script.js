@@ -70,6 +70,9 @@ function onClickEvent(e){
   const px = ((clientX - rect.left) / rect.width) * 100;
   const py = ((clientY - rect.top) / rect.height) * 100;
 
+  // debug log
+  console.log('click at', Math.round(px), Math.round(py));
+
   checkHit(px, py);
 }
 
