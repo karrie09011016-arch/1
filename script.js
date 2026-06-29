@@ -1,9 +1,9 @@
-// 三关数据：请把 images 放在 assets/ 下或修改路径；hotspots 用百分比 (x,y) 和 半径 r (百分比)
-// x,y 表示热点圆心相对于右侧图片盒子的百分比，r 为百分比半径（相对于图片宽度）
+// 三关数据：使用你仓库中的图片（A1/A2 为第一关，B1/B2 第二关，C1/C2 第三关）
+// hotspots 用百分比 (x,y) 和 半径 r (百分比)
 const levels = [
   {
-    left: 'assets/level1-left.jpg',
-    right: 'assets/level1-right.jpg',
+    left: 'A1.jpg',
+    right: 'A2.jpg',
     hotspots: [
       { x: 28, y: 35, r: 6 },
       { x: 65, y: 22, r: 6 },
@@ -11,8 +11,8 @@ const levels = [
     ]
   },
   {
-    left: 'assets/level2-left.jpg',
-    right: 'assets/level2-right.jpg',
+    left: 'B1.jpg',
+    right: 'B2.jpg',
     hotspots: [
       { x: 22, y: 42, r: 6 },
       { x: 60, y: 50, r: 6 },
@@ -20,8 +20,8 @@ const levels = [
     ]
   },
   {
-    left: 'assets/level3-left.jpg',
-    right: 'assets/level3-right.jpg',
+    left: 'C1.jpg',
+    right: 'C2.jpg',
     hotspots: [
       { x: 34, y: 30, r: 6 },
       { x: 55, y: 55, r: 7 },
@@ -97,14 +97,11 @@ function checkHit(px, py){
       return;
     }
   }
-  // 可选：点击未命中给一个轻微提示
-  // if(navigator.vibrate) navigator.vibrate([20]);
 }
 
 function addMarker(xPercent,yPercent,rPercent){
   const marker = document.createElement('div');
   marker.className = 'marker';
-  // marker 大小按图片宽度百分比设定，且 left/top 为百分比定位
   const size = (rPercent * 2); // 直径百分比
   marker.style.width = size + '%';
   marker.style.height = size + '%';
@@ -135,10 +132,8 @@ nextBtn.addEventListener('click', ()=>{
     current++;
     loadLevel(current);
   } else {
-    // 完成全部关卡 -> 重置或显示成绩
     current = 0;
     loadLevel(current);
-    // 你可以在这里跳转到其他页面，或展示分数页面
   }
 });
 
