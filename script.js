@@ -1,14 +1,15 @@
 // 三关数据：使用你仓库中的图片（A1/A2 为第一关，B1/B2 第二关，C1/C2 第三关）
 // hotspots 用百分比 (x,y) 和 半径 r (百分比)
-// 半径略微增大以提高命中容错
+// 半径保持为 9，已根据你给出的点击坐标精确调整第1关的 x,y
+// debug 模式：在 URL 中加 ?debug=1 可显示热点区域辅助校准
 const levels = [
   {
     left: 'A1.jpg',
     right: 'A2.jpg',
     hotspots: [
-      { x: 28, y: 35, r: 9 },
-      { x: 65, y: 22, r: 9 },
-      { x: 48, y: 70, r: 9 },
+      { x: 26, y: 23, r: 9 },
+      { x: 40, y: 63, r: 9 },
+      { x: 78, y: 79, r: 9 },
     ]
   },
   {
@@ -112,7 +113,7 @@ function checkHit(px, py){
       found[i] = true;
       addMarker(h.x, h.y, h.r);
       updateInfo();
-      // 简单提示（震动）
+      // 简单提示（震动)
       if(navigator.vibrate) navigator.vibrate(50);
       // 若全部找到，显示过关
       if(found.every(Boolean)){
