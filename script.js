@@ -1,24 +1,24 @@
 // 三关数据：使用你仓库中的图片（A1/A2 为第一关，B1/B2 第二关，C1/C2 第三关）
 // hotspots 用百分比 (x,y) 和 半径 r (百分比)
-// 半径保持为 9，已根据你给出的点击坐标精确调整第1关的 x,y
+// 半径保持为 9，已根据你给出的点击坐标精确调整第1关和第2关的 x,y
 // debug 模式：在 URL 中加 ?debug=1 可显示热点区域辅助校准
 const levels = [
   {
     left: 'A1.jpg',
     right: 'A2.jpg',
     hotspots: [
+      { x: 39, y: 63, r: 9 },
+      { x: 78, y: 80, r: 9 },
       { x: 26, y: 23, r: 9 },
-      { x: 40, y: 63, r: 9 },
-      { x: 78, y: 79, r: 9 },
     ]
   },
   {
     left: 'B1.jpg',
     right: 'B2.jpg',
     hotspots: [
-      { x: 22, y: 42, r: 9 },
-      { x: 60, y: 50, r: 9 },
-      { x: 80, y: 25, r: 9 },
+      { x: 66, y: 43, r: 9 },
+      { x: 21, y: 44, r: 9 },
+      { x: 43, y: 23, r: 9 },
     ]
   },
   {
@@ -184,6 +184,11 @@ nextBtn.addEventListener('click', ()=>{
 // 事件监听（支持 touchstart 以便移动端无延迟）
 overlay.addEventListener('click', onClickEvent);
 overlay.addEventListener('touchstart', function(e){ e.preventDefault(); onClickEvent(e); }, {passive:false});
+
+// 暴露到 window 以便 index.html 的控件使用
+window.levels = levels;
+window.current = current;
+window.loadLevel = loadLevel;
 
 // 初始加载
 loadLevel(current);
